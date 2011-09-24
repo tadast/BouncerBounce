@@ -10,7 +10,6 @@ Ball.prototype.init = function(ctx, width, height) {
   this.r = 30;
   this.width = width;
   this.height = height;
-  this.bgColor = "#333";
   this.setColor("#e00");
 };
 
@@ -23,15 +22,10 @@ Ball.prototype.draw = function(){
 };
 
 Ball.prototype.clearOld = function(){
-  this.ctx.fillStyle = this.bgColor;
-  this.ctx.beginPath();
-  this.ctx.arc(this.x, this.y, this.r + 1, 0, Math.PI*2, true);
-  this.ctx.closePath();
-  this.ctx.fill();
+  this.ctx.clearRect(this.x - this.r - 1, this.y - this.r - 1, this.r * 2 + 2, this.r * 2 + 2);
 };
 
 Ball.prototype.applyVelocity = function(compensator){
-  this.clearOld();
   this.bounceBoundaries();
   this.x += this.xv * 6 * compensator;
   this.y += this.yv * 6 * compensator;

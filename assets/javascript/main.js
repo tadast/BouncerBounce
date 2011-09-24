@@ -1,3 +1,21 @@
+// shim layer with setTimeout fallback
+// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+window.requestAnimFrame = (function(){
+  return  window.requestAnimationFrame       || 
+          window.webkitRequestAnimationFrame || 
+          window.mozRequestAnimationFrame    || 
+          window.oRequestAnimationFrame      || 
+          window.msRequestAnimationFrame     || 
+          function(/* function */ callback, /* DOMElement */ element){
+            window.setTimeout(callback, 1000 / 60);
+          };
+})();
+
+function animate(time) {
+    requestAnimFrame(animate);
+    game.draw(time);
+};
+
 function playerInput(e) {
   e.preventDefault();
   var touches = e.changedTouches;
@@ -18,7 +36,7 @@ var Bouncer = function(){
   this.goalKeeper = new Ball();
   this.goalKeeper.init(this.ctx, this.scene.width, this.scene.height);
   this.goalKeeper.setVelocity(1.5, 0);
-  this.goalKeeper.setColor("#0e0");
+  this.goalKeeper.setColor("#ef0");
   this.goalKeeper.moveTo(210, 30);
 
   this.player = new CBall();
@@ -27,10 +45,9 @@ var Bouncer = function(){
   this.scene.addEventListener('mousemove', playerInput, false);
   this.scene.addEventListener('touchmove', playerInput, false);
   
-  this.speed = 1000 / 60;
+  this.frameTime = 17; //miliseconds
   
   var bouncer = this;
-  return setInterval(function(){game.draw()}, this.speed);
   this.lastFrameAt = Date.now();
   this.compensator = 1.0;
 };
@@ -38,23 +55,26 @@ var Bouncer = function(){
 Bouncer.prototype.constructor = Bouncer;
 
 Bouncer.prototype.clearScene = function(){
-  // only clear scene for controllable ball, others clear after themselves
-  var fromY = this.scene.height - this.player.areaHeight() - this.player.r;
-  this.ctx.clearRect(0, fromY, this.scene.width, this.scene.height);
+  this.ctx.clearRect(0, this.player.limitY("upper"), this.scene.width, this.player.areaHeight() + this.player.r);
+  this.goalKeeper.clearOld();
+  this.ball.clearOld();
+
+  // stroke lines marking controllable area
+  this.strokeLimits();
 };
 
-Bouncer.prototype.draw = function(){
-  Bouncer.prototype.calculateCompensator();
+Bouncer.prototype.draw = function(time){
+  Bouncer.prototype.calculateCompensator(time);
   this.processCollisions();
   this.clearScene();
 
   this.goalKeeper.applyVelocity(this.compensator);
   this.goalKeeper.draw();
   
-  this.player.draw();
-  
   this.ball.applyVelocity(this.compensator);
   this.ball.draw();
+  
+  this.player.draw();
 };
 
 Bouncer.prototype.processCollisions = function(){
@@ -64,11 +84,31 @@ Bouncer.prototype.processCollisions = function(){
   if(this.ball.collidesWith(this.player)){
     this.ball.onCollisionWith(this.player);
   };
-}
+};
 
-Bouncer.prototype.calculateCompensator = function(){
-  var now = Date.now();
-  game.compensator = ((now - game.lastFrameAt) / game.speed) || 1;
+// compensator compensates graphics lag to keep the game pace
+// consistent over the time and across different devices.
+Bouncer.prototype.calculateCompensator = function(now){
+  game.compensator = ((now - game.lastFrameAt) / game.frameTime) || 1;
   game.lastFrameAt = now;
   return game.compensator;
-}
+};
+
+Bouncer.prototype.strokeLimits = function(){
+  this.ctx.lineWidth = 0.1;  
+  this.ctx.strokeStyle = this.player.color;
+  this.ctx.moveTo(0, this.player.limitY("upper"));
+  this.ctx.lineTo(this.scene.width, this.player.limitY("upper"));
+  this.ctx.stroke();
+  
+  this.ctx.lineWidth = 0.1;
+  this.ctx.strokeStyle = this.goalKeeper.color;
+  this.ctx.moveTo(0, this.player.areaHeight() + this.goalKeeper.r);
+  this.ctx.lineTo(this.scene.width, this.player.areaHeight() + this.goalKeeper.r);
+  this.ctx.stroke();
+};
+
+window.onload = function init(){
+  game = new Bouncer();
+  animate();
+};

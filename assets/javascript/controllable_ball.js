@@ -10,7 +10,6 @@ CBall.prototype.init = function(ctx, width, height) {
   this.setColor("#0e0");
   this.sceneWidth = width;
   this.sceneHeight = height;
-  this.bgColor = "#333";
 };
 
 CBall.prototype.updatePosition = function(x, y){
@@ -28,11 +27,19 @@ CBall.prototype.applyLimits = function(){
   
   if(this.y > this.sceneHeight - this.r){
     this.y = this.sceneHeight - this.r;
-  }else if(this.y < this.sceneHeight - this.areaHeight()){
-    this.y = this.sceneHeight - this.areaHeight();
+  }else if(this.y < this.limitY()){
+    this.y = this.limitY();
   };
 };
 
-CBall.prototype.areaHeight = function(){
-  return 4 * this.r;
+CBall.prototype.areaHeight = function(upper){
+  return 2 * this.r;
 };
+
+CBall.prototype.limitY = function(upper){
+  if (upper === undefined) {
+    return this.sceneHeight - this.areaHeight();
+  } else {
+    return this.sceneHeight - this.areaHeight() - this.r;
+  };
+}
